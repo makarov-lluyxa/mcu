@@ -32,10 +32,19 @@ void get_adc_callback(const char* args) {
     printf("%f\n", voltage);
 }
 
-// Колбэк для команды get_temp
 void get_temp_callback(const char* args) {
     float temp = adc_task_read_temperature();
     printf("%f\n", temp);
+}
+
+void tm_start_callback(const char* args) {
+    adc_task_set_state(ADC_TASK_STATE_RUN);
+    printf("Telemetry started\n");
+}
+
+void tm_stop_callback(const char* args) {
+    adc_task_set_state(ADC_TASK_STATE_IDLE);
+    printf("Telemetry stopped\n");
 }
 
 api_t device_api[] = {
@@ -44,7 +53,9 @@ api_t device_api[] = {
     {"off",     led_off_callback, "turn off LED"},
     {"blink",   led_blink_callback, "make LED blink"},
     {"get_adc", get_adc_callback, "read ADC voltage on GPIO26"},
-    {"get_temp", get_temp_callback, "read chip temperature"},   // новая команда
+    {"get_temp", get_temp_callback, "read chip temperature"},
+    {"tm_start", tm_start_callback, "start periodic telemetry (voltage & temp)"},
+    {"tm_stop",  tm_stop_callback,  "stop periodic telemetry"},
     {NULL, NULL, NULL}
 };
 
@@ -53,18 +64,20 @@ int main() {
     stdio_task_init();
     protocol_task_init(device_api);
     led_task_init();
-    adc_task_init();          // теперь включает и датчик температуры
+    adc_task_init();
 
     sleep_ms(1000);
 
-    printf("\n--- Pico ADC/Temperature Terminal ---\n");
+    printf("\n--- Pico ADC Telemetry Terminal ---\n");
     printf("Available commands:\n");
     printf("  version  - get device info\n");
     printf("  on       - turn LED on\n");
     printf("  off      - turn LED off\n");
     printf("  blink    - make LED blink\n");
-    printf("  get_adc  - read ADC voltage on GPIO26\n");
-    printf("  get_temp - read chip temperature\n");
+    printf("  get_adc  - read ADC voltage on GPIO26 (one-shot)\n");
+    printf("  get_temp - read chip temperature (one-shot)\n");
+    printf("  tm_start - start periodic telemetry (voltage & temp every 100ms)\n");
+    printf("  tm_stop  - stop periodic telemetry\n");
     printf("Type a command and press Enter:\n");
 
     while (true) {
@@ -75,6 +88,7 @@ int main() {
         }
 
         led_task_handle();
+        adc_task_handle();
     }
 
     return 0;

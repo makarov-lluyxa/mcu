@@ -6,13 +6,13 @@ def read_value(ser):
     while True:
         try:
             line = ser.readline().decode('ascii').strip()
-            value = float(line)
-            return value
-        except ValueError:
+            v, t = map(float, line.split())
+            return v, t
+        except (ValueError, UnicodeDecodeError):
             continue
 
 def main():
-    port = 'COM11'
+    port = 'COM10'
     baudrate = 115200
     timeout = 0.0
 
@@ -30,15 +30,14 @@ def main():
 
     start_ts = time.time()
 
+    ser.write("tm_start\n".encode('ascii'))
+    print("Telemetry started. Press Ctrl+C to stop.")
+
     try:
         while True:
             ts = time.time() - start_ts
 
-            ser.write("get_adc\n".encode('ascii'))
-            voltage_V = read_value(ser)
-
-            ser.write("get_temp\n".encode('ascii'))
-            temp_C = read_value(ser)
+            voltage_V, temp_C = read_value(ser)
 
             measure_ts.append(ts)
             measure_voltage_V.append(voltage_V)
@@ -51,8 +50,9 @@ def main():
     except KeyboardInterrupt:
         print("\nMeasurement stopped by user")
     finally:
+        ser.write("tm_stop\n".encode('ascii'))
         ser.close()
-        print("Port closed")
+        print("Port closed, telemetry stopped")
 
         plt.figure(figsize=(10, 8))
 
@@ -75,4 +75,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
