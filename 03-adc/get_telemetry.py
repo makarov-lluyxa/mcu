@@ -12,7 +12,7 @@ def read_value(ser):
             continue
 
 def main():
-    port = 'COM10'
+    port = 'COM11'
     baudrate = 115200
     timeout = 0.0
 
